@@ -1,0 +1,5 @@
+.env
+.venv
+.codegpt.env
+__pycache__/
+*.zip
