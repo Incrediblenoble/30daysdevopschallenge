@@ -1,5 +1,29 @@
+# Environments
 .env
 .venv
-.codegpt.env
+venv/
 __pycache__/
+
+# IDE specific files
+.idea/
+.vscode/
+
+# Python cache
+*.pyc
+*.pyo
+*.pyd
+
+# Moto temporary files
+.moto/
+
+# Test reports
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Build artifacts
 *.zip
+*.tar.gz
+*.egg-info
+dist/
+build/
