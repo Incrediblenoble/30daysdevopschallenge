@@ -4,6 +4,7 @@ import boto3
 import requests
 import logging
 import argparse
+import openai
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -109,8 +110,54 @@ def display_weather(weather_data):
         logging.info(f"  Feels like: {feels_like}°F")
         logging.info(f"  Humidity: {humidity}%")
         logging.info(f"  Conditions: {description.capitalize()}")
+
+        # AI-generated summary
+        ai_summary = get_ai_summary(weather_data)
+        if ai_summary:
+            logging.info(f"  AI Summary: {ai_summary}")
+
     except (KeyError, IndexError) as e:
         logging.error(f"Could not parse weather data: {e}")
+
+def get_ai_summary(weather_data):
+    """
+    Generates a human-readable weather summary using the OpenAI API.
+    """
+    if not weather_data:
+        return None
+
+    try:
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            logging.warning("OpenAI API key not found. Skipping AI summary.")
+            return None
+
+        client = openai.OpenAI(api_key=api_key)
+        city = weather_data.get('name', 'the current city')
+        temp = weather_data['main']['temp']
+        feels_like = weather_data['main']['feels_like']
+        humidity = weather_data['main']['humidity']
+        description = weather_data['weather'][0]['description']
+
+        prompt = (
+            f"Provide a brief, conversational weather summary for {city}. "
+            f"The current temperature is {temp}°F, but it feels like {feels_like}°F. "
+            f"The humidity is at {humidity}% with {description}."
+        )
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful weather assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=50
+        )
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        logging.error(f"Error generating AI summary: {e}")
+        return None
 
 def process_city(dashboard, city):
     """

@@ -9,7 +9,7 @@ import sys
 # Add the 'src' directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
-from weather_dashboard import WeatherDashboard
+from weather_dashboard import WeatherDashboard, get_ai_summary
 
 class TestWeatherDashboard(unittest.TestCase):
     def setUp(self):
@@ -69,6 +69,40 @@ class TestWeatherDashboard(unittest.TestCase):
         buckets = [bucket['Name'] for bucket in response['Buckets']]
 
         self.assertIn(self.bucket_name, buckets)
+
+    @patch('openai.OpenAI')
+    def test_get_ai_summary_success(self, mock_openai_client):
+        """Test successful AI summary generation."""
+        mock_client_instance = mock_openai_client.return_value
+        mock_client_instance.chat.completions.create.return_value = MagicMock(
+            choices=[MagicMock(message=MagicMock(content="A beautiful day!"))]
+        )
+
+        os.environ['OPENAI_API_KEY'] = "test_openai_key"
+        weather_data = {
+            "name": "Test City",
+            "main": {"temp": 70, "feels_like": 68, "humidity": 50},
+            "weather": [{"description": "clear sky"}]
+        }
+
+        summary = get_ai_summary(weather_data)
+        self.assertEqual(summary, "A beautiful day!")
+
+    @patch('openai.OpenAI')
+    def test_get_ai_summary_failure(self, mock_openai_client):
+        """Test failed AI summary generation."""
+        mock_client_instance = mock_openai_client.return_value
+        mock_client_instance.chat.completions.create.side_effect = Exception("OpenAI API error")
+
+        os.environ['OPENAI_API_KEY'] = "test_openai_key"
+        weather_data = {
+            "name": "Test City",
+            "main": {"temp": 70, "feels_like": 68, "humidity": 50},
+            "weather": [{"description": "clear sky"}]
+        }
+
+        summary = get_ai_summary(weather_data)
+        self.assertIsNone(summary)
 
 if __name__ == '__main__':
     unittest.main()
